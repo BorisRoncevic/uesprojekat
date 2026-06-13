@@ -21,6 +21,34 @@ services:
       - ${MAILHOG_PORT}:1025
       - ${MAILHOG_UI_PORT}:8025
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.18.1
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: false
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200 >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    ports:
+      - ${ES_PORT}:9200
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+
+  minio:
+    image: minio/minio:latest
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_PW}
+    ports:
+      - ${API_PORT}:9000
+      - ${CLIENT_PORT}:9001
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+  
   backend:
     build: ./GoDo
     ports:
@@ -33,9 +61,16 @@ services:
       SPRING_MAIL_HOST: ${MAIL_HOST}
       JWT_TTL: ${JWT_TTL}
       RT_TTL: ${RT_TTL}
+
+      SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
+      MINIO_URL: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_USER}
+      MINIO_SECRET_KEY: ${MINIO_PW}
     restart: always
     depends_on:
       db:
+        condition: service_healthy
+      elasticsearch:
         condition: service_healthy
     volumes:
       - uploads:/app/uploads
@@ -48,3 +83,5 @@ services:
 volumes:
   pgdata:
   uploads:
+  es_data:
+  minio_data:

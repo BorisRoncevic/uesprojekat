@@ -8,8 +8,11 @@ import com.app.godo.exceptions.general.ConflictException;
 import com.app.godo.exceptions.general.NotFoundException;
 import com.app.godo.exceptions.general.ParseException;
 import com.app.godo.models.Image;
+import com.app.godo.models.Review;
 import com.app.godo.models.Venue;
+import com.app.godo.models.VenueDocument;
 import com.app.godo.repositories.event.EventRepository;
+import com.app.godo.repositories.venue.VenueESRepository;
 import com.app.godo.repositories.venue.VenueRepository;
 import com.app.godo.services.event.EventService;
 import com.app.godo.services.files.FileStorageService;
@@ -33,6 +36,7 @@ import java.util.List;
 public class VenueService {
     private final VenueRepository venueRepository;
     private final EventRepository eventRepository;
+    private final VenueESRepository venueElasticsearchRepository;
     private final FileStorageService fileStorageService;
     private final ObjectMapper objectMapper;
 
@@ -70,8 +74,8 @@ public class VenueService {
 
         venue.setImage(
                 Image.builder()
-                .venueImageOf(venue)
-                .path(path).build()
+                        .venueImageOf(venue)
+                        .path(path).build()
         );
 
         venueRepository.save(venue);
@@ -130,5 +134,61 @@ public class VenueService {
                 .limit(3)
                 .map(VenueOverviewDto::fromEntity)
                 .toList();
+    }
+
+    @Transactional
+    public void syncVenueToElasticsearch(Long venueId) {
+        Venue venue = venueRepository.findById(venueId)
+                .orElseThrow(() -> new IllegalArgumentException("Venue not found: " + venueId));
+
+        String pdfText = "";
+        VenueDocument existingDoc = venueElasticsearchRepository.findById(venueId).orElse(null);
+        if (existingDoc != null) {
+            pdfText = existingDoc.getPdfDescription();
+        }
+
+        java.util.List<Review> validReviews = venue.getReviews().stream()
+                .filter(review -> review.getRating() != null)
+                .toList();
+
+        int reviewCount = validReviews.size();
+
+        double avgPerformance = validReviews.stream()
+                .mapToInt(r -> r.getRating().getPerformance())
+                .filter(val -> val > 0)
+                .average().orElse(0.0);
+
+        double avgAmbient = validReviews.stream()
+                .mapToInt(r -> r.getRating().getAmbient())
+                .filter(val -> val > 0)
+                .average().orElse(0.0);
+
+        double avgVenueRating = validReviews.stream()
+                .mapToInt(r -> r.getRating().getVenue())
+                .filter(val -> val > 0)
+                .average().orElse(0.0);
+
+        double avgOverall = validReviews.stream()
+                .mapToInt(r -> r.getRating().getOverallImpression())
+                .filter(val -> val > 0)
+                .average().orElse(0.0);
+
+        VenueDocument updatedDoc = VenueDocument.builder()
+                .id(venue.getId())
+                .name(venue.getName())
+                .description(venue.getDescription())
+                .address(venue.getAddress())
+                .type(venue.getType().name())
+                .pdfDescription(pdfText)
+                .reviewCount(venue.getReviews().size())
+                .averageRating(venue.getAverageRating())
+                .ratingPerformance(avgPerformance)
+                .ratingAmbient(avgAmbient)
+                .ratingVenue(avgVenueRating)
+                .ratingOverallImpression(avgOverall)
+                .build();
+
+        venueElasticsearchRepository.save(updatedDoc);
+        logger.info("Successfully recalculated and synced ES document properties for Venue: {}", venue.getName());
     }
 }

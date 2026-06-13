@@ -33,6 +33,12 @@ public class Venue {
     @Column(nullable = false)
     private String address;
 
+    @Column
+    private String imageFilename;
+
+    @Column
+    private String pdfFilename;
+
     private double averageRating;
 
     @Column(nullable = false)
