@@ -16,6 +16,7 @@ import com.app.godo.repositories.venue.VenueESRepository;
 import com.app.godo.repositories.venue.VenueRepository;
 import com.app.godo.services.event.EventService;
 import com.app.godo.services.files.FileStorageService;
+import com.app.godo.services.files.MinIOService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
@@ -37,7 +38,7 @@ public class VenueService {
     private final VenueRepository venueRepository;
     private final EventRepository eventRepository;
     private final VenueESRepository venueElasticsearchRepository;
-    private final FileStorageService fileStorageService;
+    private final MinIOService minIOService;
     private final ObjectMapper objectMapper;
 
     private static final Logger logger = LogManager.getLogger(VenueService.class);
@@ -70,12 +71,13 @@ public class VenueService {
                 .createdAt(LocalDate.from(LocalDateTime.now()))
                 .build();
 
-        String path = "http://localhost:8080/uploads/" + fileStorageService.storeFile(venueImage);
+        String name = minIOService.uploadFile(venueImage);
+        logger.info("Venue image is saved as {}", name);
 
         venue.setImage(
                 Image.builder()
                         .venueImageOf(venue)
-                        .path(path).build()
+                        .name(name).build()
         );
 
         venueRepository.save(venue);

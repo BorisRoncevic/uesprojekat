@@ -18,8 +18,11 @@ public class Image {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    @Column(unique = false, nullable = false)
-    private String path;
+    @Column(unique = false, nullable = true)
+    private String path = "https://picsum.photos/800/600";
+
+    @Column(unique = false, nullable = true)
+    private String name;
 
     @OneToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id")
