@@ -3,6 +3,7 @@ package com.app.godo.controllers.venue;
 
 import com.app.godo.dtos.venue.CreateVenueRequestDto;
 import com.app.godo.dtos.venue.UpdateVenueDto;
+import com.app.godo.dtos.venue.VenueIndexOverviewDto;
 import com.app.godo.dtos.venue.VenueOverviewDto;
 import com.app.godo.models.Venue;
 import com.app.godo.services.venue.VenueService;
@@ -26,7 +27,7 @@ public class VenueController {
     private final VenueService venueService;
 
     @GetMapping
-    public ResponseEntity<Page<VenueOverviewDto>> filterVenues(
+    public ResponseEntity<Page<VenueIndexOverviewDto>> filterVenues(
             @RequestParam(value = "filter", defaultValue = "") String filter,
             @RequestParam(value = "venueType", defaultValue = "-1") int venueType,
             @PageableDefault(size = 8, sort = "name", direction = Sort.Direction.ASC) Pageable venuePage
@@ -35,16 +36,17 @@ public class VenueController {
     }
 
     @PostMapping(consumes = { "multipart/form-data" })
-    public ResponseEntity<VenueOverviewDto> createVenue(
+    public ResponseEntity<VenueIndexOverviewDto> createVenue(
             @RequestPart("venue") String venueJson,
-            @RequestPart("image") MultipartFile imageFile) {
+            @RequestPart("image") MultipartFile imageFile,
+            @RequestPart(value = "description", required = false) MultipartFile pdfFile) {
 
         CreateVenueRequestDto createVenueRequest = venueService.convertToCreateVenueRequest(venueJson);
-        return ResponseEntity.ok(venueService.createVenue(createVenueRequest, imageFile));
+        return ResponseEntity.ok(venueService.createVenue(createVenueRequest, imageFile, pdfFile));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<VenueOverviewDto> getVenueById(@PathVariable long id) {
+    public ResponseEntity<VenueIndexOverviewDto> getVenueById(@PathVariable long id) {
           return ResponseEntity.ok(venueService.findVenueById(id));
     }
 

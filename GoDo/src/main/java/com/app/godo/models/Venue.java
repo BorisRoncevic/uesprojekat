@@ -41,6 +41,12 @@ public class Venue {
 
     private double averageRating;
 
+    @Transient
+    private String imagePath;
+
+    @Transient
+    private String pdfPath;
+
     @Column(nullable = false)
     private VenueType type;
 

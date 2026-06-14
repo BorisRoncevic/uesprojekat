@@ -2,6 +2,7 @@ package com.app.godo.services.venue;
 
 import com.app.godo.dtos.venue.CreateVenueRequestDto;
 import com.app.godo.dtos.venue.UpdateVenueDto;
+import com.app.godo.dtos.venue.VenueIndexOverviewDto;
 import com.app.godo.dtos.venue.VenueOverviewDto;
 import com.app.godo.enums.VenueType;
 import com.app.godo.exceptions.general.ConflictException;
@@ -17,6 +18,7 @@ import com.app.godo.repositories.venue.VenueRepository;
 import com.app.godo.services.event.EventService;
 import com.app.godo.services.files.FileStorageService;
 import com.app.godo.services.files.MinIOService;
+import com.app.godo.utils.PDFParserUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
@@ -43,7 +45,7 @@ public class VenueService {
 
     private static final Logger logger = LogManager.getLogger(VenueService.class);
 
-    public Page<VenueOverviewDto> filterVenues(String filter, int venueType, Pageable pageable) {
+    public Page<VenueIndexOverviewDto> filterVenues(String filter, int venueType, Pageable pageable) {
         Page<Venue> venues;
 
         if (venueType == -1) {
@@ -53,14 +55,22 @@ public class VenueService {
             venues = venueRepository.filterVenuesWithType(filter, filter, VenueType.values()[venueType], pageable);
         }
 
-        return venues.map(VenueOverviewDto::fromEntity);
+        return venues.map(venue -> VenueIndexOverviewDto.fromEntity(venue,
+                minIOService.getFileUrl(venue.getImageFilename()),
+                minIOService.getFileUrl(venue.getPdfFilename())));
     }
 
     @Transactional
-    public VenueOverviewDto createVenue(CreateVenueRequestDto venueRequest, MultipartFile venueImage) {
+    public VenueIndexOverviewDto createVenue(CreateVenueRequestDto venueRequest, MultipartFile venueImage, MultipartFile venuePdf) {
         Venue existingVenue = venueRepository.findVenueByName(venueRequest.getName());
 
         if (existingVenue != null) { throw new ConflictException("A venue with the entered name already exists!"); }
+
+        String imageName = minIOService.uploadFile(venueImage);
+        logger.info("Venue image is saved as {}", imageName);
+
+        String pdfName = minIOService.uploadFile(venuePdf);
+        logger.info("Venue PDF is saved as {}", pdfName);
 
         Venue venue = Venue.builder()
                 .name(venueRequest.getName())
@@ -69,27 +79,56 @@ public class VenueService {
                 .type(venueRequest.getType())
                 .averageRating(0)
                 .createdAt(LocalDate.from(LocalDateTime.now()))
+                .imageFilename(imageName)
+                .pdfFilename(pdfName)
                 .build();
 
-        String name = minIOService.uploadFile(venueImage);
-        logger.info("Venue image is saved as {}", name);
 
-        venue.setImage(
-                Image.builder()
-                        .venueImageOf(venue)
-                        .name(name).build()
-        );
+        var savedVenue = venueRepository.save(venue);
 
-        venueRepository.save(venue);
+        String extractedPdfText = PDFParserUtil.extractTextFromPDF(venuePdf);
 
-        return VenueOverviewDto.fromEntity(venue);
+        VenueDocument doc = VenueDocument.builder()
+                .id(savedVenue.getId())
+                .name(savedVenue.getName())
+                .description(savedVenue.getDescription())
+                .address(savedVenue.getAddress())
+                .type(savedVenue.getType().name())
+                .imageFilename(savedVenue.getImageFilename())
+                .pdfFilename(savedVenue.getPdfFilename())
+                .pdfDescription(extractedPdfText)
+                .reviewCount(0)
+                .averageRating(0.0)
+                .ratingPerformance(0.0)
+                .ratingAmbient(0.0)
+                .ratingVenue(0.0)
+                .ratingOverallImpression(0.0)
+                .build();
+
+        try {
+            venueElasticsearchRepository.save(doc);
+            logger.info("Successfully indexed venue '{}' [ID: {}] in Elasticsearch.", savedVenue.getName(), savedVenue.getId());
+        } catch (Exception e) {
+            // We log the error but do not crash the transaction.
+            // This ensures the database transaction remains safe even if the search cluster hits a transient issue.
+            logger.error("Failed to index venue in Elasticsearch: ", e);
+        }
+
+        String imagePath = minIOService.getFileUrl(imageName);
+        String pdfPath = minIOService.getFileUrl(pdfName);
+
+        return VenueIndexOverviewDto.fromEntity(venue, imageName, pdfName);
     }
 
-    public VenueOverviewDto findVenueById(long venueId) {
+    public VenueIndexOverviewDto findVenueById(long venueId) {
         Venue venue = venueRepository.findVenueById(venueId)
                 .orElseThrow(() -> new NotFoundException("The venue you were looking for can't be found"));
 
-        return VenueOverviewDto.fromEntity(venue);
+        String imagePath = minIOService.getFileUrl(venue.getImageFilename());
+        String pdfPath = minIOService.getFileUrl(venue.getPdfFilename());
+        logger.info("Fetched image and file for venue with ID: {} => imagePath: {}, pdfPath: {}", venueId, imagePath, pdfPath);
+
+        return VenueIndexOverviewDto.fromEntity(venue, imagePath, pdfPath);
     }
 
     public UpdateVenueDto updateVenue(long venueId, UpdateVenueDto updateVenueDto) {

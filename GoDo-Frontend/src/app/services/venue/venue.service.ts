@@ -12,10 +12,11 @@ import { UpdateVenueDto } from '../../models/venue/UpdateVenueDto';
 export class VenueService {
   constructor(private http: HttpClient) {}
 
-  public addVenue(venueData: AddVenueRequest, venueImage: File) {
+  public addVenue(venueData: AddVenueRequest, venueImage: File, venueDesc: File) {
     let formData = new FormData();
     formData.append('venue', JSON.stringify(venueData));
     formData.append('image', venueImage);
+    formData.append('description', venueDesc);
 
     return this.http.post(environment.apiUrl + '/venue', formData);
   }

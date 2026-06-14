@@ -36,6 +36,27 @@ public class MinIOService {
             } else {
                 logger.info("MinIO bucket '{}' already exists.", bucketName);
             }
+
+            String publicReadPolicy = "{\n" +
+                    "  \"Version\": \"2012-10-17\",\n" +
+                    "  \"Statement\": [\n" +
+                    "    {\n" +
+                    "      \"Effect\": \"Allow\",\n" +
+                    "      \"Principal\": {\"AWS\": [\"*\"]},\n" +
+                    "      \"Action\": [\"s3:GetObject\"],\n" +
+                    "      \"Resource\": [\"arn:aws:s3:::" + bucketName + "/*\"]\n" +
+                    "    }\n" +
+                    "  ]\n" +
+                    "}";
+
+            minioClient.setBucketPolicy(
+                    SetBucketPolicyArgs.builder()
+                            .bucket(bucketName)
+                            .config(publicReadPolicy)
+                            .build()
+            );
+            logger.info("Public read-only policy successfully applied to MinIO bucket '{}'.", bucketName);
+
         } catch (Exception e) {
             logger.error("Failed to initialize MinIO bucket on startup: ", e);
         }
@@ -68,17 +89,8 @@ public class MinIOService {
         if (filename == null || filename.isEmpty()) {
             return null;
         }
-        try {
-            return minioClient.getPresignedObjectUrl(
-                    GetPresignedObjectUrlArgs.builder()
-                            .method(Method.GET)
-                            .bucket(bucketName)
-                            .object(filename)
-                            .expiry(1, TimeUnit.DAYS)
-                            .build());
-        } catch (Exception e) {
-            logger.error("Error generating download URL for file: {}", filename, e);
-            return null;
-        }
+        // Since the bucket policy is public-read, we do not need S3 pre-signed signatures!
+        // We just return a direct, permanent public localhost link:
+        return "http://localhost:9000/" + bucketName + "/" + filename;
     }
 }

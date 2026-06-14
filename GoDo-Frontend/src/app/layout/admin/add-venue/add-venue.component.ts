@@ -59,7 +59,8 @@ export class AddVenueComponent {
     ['Museum', 7],
   ]);
 
-  selectedFile: File | null = null;
+  selectedImageFile: File | null = null;
+  selectedPDFFile: File | null = null;
 
   addVenueForm = new FormGroup({
     name: new FormControl('', Validators.required),
@@ -70,12 +71,16 @@ export class AddVenueComponent {
 
   constructor(public venueService: VenueService, private router: Router, private messageService: MessageService) {}
 
-  onUpload(event: any) {
-    this.selectedFile = event.files[0];
+  onImageUpload(event: any) {
+    this.selectedImageFile = event.files[0];
+  }
+
+  onPDFUpload(event: any) {
+    this.selectedPDFFile = event.files[0];
   }
 
   isValid(): unknown {
-    return this.addVenueForm.valid && this.selectedFile != null;
+    return this.addVenueForm.valid && this.selectedImageFile != null && this.selectedPDFFile != null;
   }
 
   submitAddVenueForm() {
@@ -85,7 +90,7 @@ export class AddVenueComponent {
     let type =
       this.VenueTypeMap.get(this.addVenueForm.value.type?.name ?? '') ?? 0;
 
-    if (this.selectedFile != null) {
+    if (this.selectedImageFile != null && this.selectedPDFFile != null) {
       this.venueService
         .addVenue(
           {
@@ -94,7 +99,8 @@ export class AddVenueComponent {
             description: description,
             type: type,
           },
-          this.selectedFile
+          this.selectedImageFile,
+          this.selectedPDFFile
         )
         .subscribe({
           next: (response) => {
@@ -109,7 +115,7 @@ export class AddVenueComponent {
           },
         });
     } else {
-      this.addVenueError("You must select venue image!");
+      this.addVenueError("You must provide a venue image and description PDF!");
     }
   }
 

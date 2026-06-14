@@ -19,8 +19,13 @@
         </div>
         <div class="flex flex-column my-2 w-full">
             <span>Venue image:</span>
-            <p-fileupload mode="basic" name="demo[]" chooseIcon="pi pi-upload" [customUpload]="true" accept="image/*" maxFileSize="1000000" [auto]="true" chooseLabel="Browse" (onSelect)="onUpload($event)" pTooltip="Venue image must be selected" />
-            <span class="text-gray-300">{{ this.selectedFile?.name }}</span>
+            <p-fileupload mode="basic" name="demo[]" chooseIcon="pi pi-upload" [customUpload]="true" accept="image/*" maxFileSize="1000000" [auto]="true" chooseLabel="Browse" (onSelect)="onImageUpload($event)" pTooltip="Venue image must be selected" />
+            <span class="text-gray-300">{{ this.selectedImageFile?.name }}</span>
+        </div>
+        <div class="flex flex-column my-2 w-full">
+            <span>Venue description PDF:</span>
+            <p-fileupload mode="basic" name="demo[]" chooseIcon="pi pi-upload" [customUpload]="true" accept="application/pdf" maxFileSize="1000000" [auto]="true" chooseLabel="Browse" (onSelect)="onPDFUpload($event)" pTooltip="Venue description file must be selected" />
+            <span class="text-gray-300">{{ this.selectedPDFFile?.name }}</span>
         </div>
         <p-button class="py-6" [type]="'submit'" [disabled]="!isValid()" (click)="submitAddVenueForm()">Submit</p-button>
     </div>

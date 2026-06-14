@@ -1,15 +1,13 @@
 package com.app.godo.dtos.venue;
 
 import com.app.godo.enums.VenueType;
-import com.app.godo.models.Image;
 import com.app.godo.models.Venue;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-
 @Data
 @AllArgsConstructor
-public class VenueOverviewDto {
+public class VenueIndexOverviewDto {
     private long id;
     private String name;
     private String description;
@@ -17,16 +15,18 @@ public class VenueOverviewDto {
     private double averageRating;
     private VenueType type;
     private String imagePath;
+    private String pdfPath;
 
-    public static VenueOverviewDto fromEntity(Venue venue) {
-        return new VenueOverviewDto(
+    public static VenueIndexOverviewDto fromEntity(Venue venue, String imagePath, String pdfPath) {
+        return new VenueIndexOverviewDto(
                 venue.getId(),
                 venue.getName(),
                 venue.getDescription(),
                 venue.getAddress(),
                 venue.getAverageRating(),
                 venue.getType(),
-                venue.getImage() != null ? venue.getImage().getPath()  : "https://picsum.photos/800/600"
+                (imagePath != null && !imagePath.isEmpty()) ? venue.getImage().getPath()  : "https://picsum.photos/800/600",
+                pdfPath
         );
     }
 }
