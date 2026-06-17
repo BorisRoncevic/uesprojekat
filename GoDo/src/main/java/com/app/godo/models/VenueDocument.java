@@ -12,26 +12,21 @@ import org.springframework.data.elasticsearch.annotations.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Document(indexName = "venues")
-//@Setting(settingPath = "elasticsearch/serbian-analyzer.json")
+@Setting(settingPath = "elasticsearch/serbian-analyzer.json")
 public class VenueDocument {
 
     @Id
     private Long id;
 
-//     @MultiField(
-//             mainField = @Field(type = FieldType.Text, analyzer = "serbian_latin_cyrillic_analyzer", searchAnalyzer = "serbian_latin_cyrillic_analyzer"),
-//             otherFields = {
-//                     @InnerField(suffix = "keyword", type = FieldType.Keyword)
-//             }
-//     )
     @MultiField(
-            mainField = @Field(type = FieldType.Text),
-            otherFields = { @InnerField(suffix = "keyword", type = FieldType.Keyword) }
+         mainField = @Field(type = FieldType.Text, analyzer = "serbian_latin_cyrillic_analyzer", searchAnalyzer = "serbian_latin_cyrillic_analyzer"),
+         otherFields = {
+                 @InnerField(suffix = "keyword", type = FieldType.Keyword)
+         }
     )
     private String name;
 
-//     @Field(type = FieldType.Text, analyzer = "serbian_latin_cyrillic_analyzer", searchAnalyzer = "serbian_latin_cyrillic_analyzer")
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Text, analyzer = "serbian_latin_cyrillic_analyzer", searchAnalyzer = "serbian_latin_cyrillic_analyzer")
     private String description;
 
     @Field(type = FieldType.Keyword)
@@ -40,15 +35,13 @@ public class VenueDocument {
     @Field(type = FieldType.Keyword)
     private String pdfFilename;
 
-//     @Field(type = FieldType.Text, analyzer = "serbian_latin_cyrillic_analyzer", searchAnalyzer = "serbian_latin_cyrillic_analyzer")
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Text, analyzer = "serbian_latin_cyrillic_analyzer", searchAnalyzer = "serbian_latin_cyrillic_analyzer")
     private String address;
 
     @Field(type = FieldType.Keyword)
     private String type;
 
-//     @Field(type = FieldType.Text, analyzer = "serbian_latin_cyrillic_analyzer", searchAnalyzer = "serbian_latin_cyrillic_analyzer")
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Text, analyzer = "serbian_latin_cyrillic_analyzer", searchAnalyzer = "serbian_latin_cyrillic_analyzer")
     private String pdfDescription;
 
     @Field(type = FieldType.Integer)

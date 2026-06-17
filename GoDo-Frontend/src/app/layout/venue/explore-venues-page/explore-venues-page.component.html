@@ -14,13 +14,6 @@
       placeholder="Explore venues"
       formControlName="filter"
     />
-    <p-select
-      optionLabel="name"
-      placeholder="Select venue type"
-      class="mx-2 w-full lg:w-5 my-2 border-round-xs"
-      [options]="this.venueTypes"
-      formControlName="type"
-    />
     <button
       class="mx-2 w-full lg:w-5 my-2 py-2 bg-primary border-none border-round-bottom-lg hover:bg-primary-200 font-bold"
       (click)="filter()"

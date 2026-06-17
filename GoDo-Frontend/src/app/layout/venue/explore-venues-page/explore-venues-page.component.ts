@@ -34,44 +34,42 @@ export class ExploreVenuesPageComponent implements OnInit {
   currentPage: number = 0;
   first: number = 0;
   currentFilter: string = '';
-  currentType: any = { name: 'Select venue type', value: -1 };
+  // currentType: any = { name: 'Select venue type', value: -1 };
 
-  public venueTypes = [
-    { name: 'Select venue type', value: -1 },
-    { name: 'Bar', value: 1 },
-    { name: 'Cultural Center', value: 0 },
-    { name: 'Museum', value: 7 },
-    { name: 'Night Club', value: 2 },
-    { name: 'Restaurant', value: 3 },
-    { name: 'Rooftop', value: 5 },
-    { name: 'Stadium', value: 6 },
-    { name: 'Theater', value: 4 },
-  ];
+  // public venueTypes = [
+  //   { name: 'Select venue type', value: -1 },
+  //   { name: 'Bar', value: 1 },
+  //   { name: 'Cultural Center', value: 0 },
+  //   { name: 'Museum', value: 7 },
+  //   { name: 'Night Club', value: 2 },
+  //   { name: 'Restaurant', value: 3 },
+  //   { name: 'Rooftop', value: 5 },
+  //   { name: 'Stadium', value: 6 },
+  //   { name: 'Theater', value: 4 },
+  // ];
 
   filterForm = new FormGroup({
     filter: new FormControl(''),
-    type: new FormControl(this.venueTypes[0], Validators.required),
   })
 
   constructor(private venueService: VenueService) {}
 
   ngOnInit(): void {
-    this.loadVenues({ filter: '', venueType: -1 }, 0);
+    this.loadVenues({ filter: '' }, 0);
   }
 
   onPageChange($event: PaginatorState) {
     this.first = $event.first ?? 0;
 
     this.loadVenues(
-      { filter: this.currentFilter, venueType: this.currentType.value },
+      { filter: this.currentFilter },
       $event.page ?? 0
     );
   }
 
   filter() {
     this.currentFilter = this.filterForm.value.filter?.trim() ?? '';
-    this.currentType = this.filterForm.value.type;
-    this.loadVenues({ filter: this.currentFilter, venueType: this.currentType.value }, 0)
+    this.loadVenues({ filter: this.currentFilter }, 0)
   }
 
   loadVenues(filterVenueDto: FilterVenueDto, page: number): void {

@@ -27,9 +27,6 @@ export class VenueService {
   ): Observable<any> {
     let venueTypeParam = null;
 
-    if (filterVenueDto.venueType != null) {
-      venueTypeParam = filterVenueDto.venueType;
-    }
 
     let queryParameters =
       '?filter=' +
@@ -37,9 +34,6 @@ export class VenueService {
       '&page=' +
       pageNumber.toString() +
       '&size=8';
-    if (filterVenueDto.venueType != null) {
-      queryParameters += '&venueType=' + filterVenueDto.venueType.toString();
-    }
     
     return this.http.get(environment.apiUrl + '/venue' + queryParameters);
   }

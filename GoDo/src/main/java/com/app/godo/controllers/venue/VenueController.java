@@ -29,10 +29,9 @@ public class VenueController {
     @GetMapping
     public ResponseEntity<Page<VenueIndexOverviewDto>> filterVenues(
             @RequestParam(value = "filter", defaultValue = "") String filter,
-            @RequestParam(value = "venueType", defaultValue = "-1") int venueType,
             @PageableDefault(size = 8, sort = "name", direction = Sort.Direction.ASC) Pageable venuePage
     ){
-        return ResponseEntity.ok(venueService.filterVenues(filter, venueType, venuePage));
+        return ResponseEntity.ok(venueService.filterVenues(filter, venuePage));
     }
 
     @PostMapping(consumes = { "multipart/form-data" })
