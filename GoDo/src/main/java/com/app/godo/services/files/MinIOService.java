@@ -93,4 +93,24 @@ public class MinIOService {
         // We just return a direct, permanent public localhost link:
         return "http://localhost:9000/" + bucketName + "/" + filename;
     }
+
+    public void deleteFile(String filename) {
+        if (filename == null || filename.isEmpty()) {
+            logger.warn("Attempted to delete a file, but the provided filename was null or empty.");
+            return;
+        }
+
+        try {
+            minioClient.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(filename)
+                            .build()
+            );
+            logger.info("Successfully deleted file from MinIO: {}", filename);
+        } catch (Exception e) {
+            logger.error("Failed to delete file from MinIO: {}", filename, e);
+            throw new RuntimeException("Could not delete file from storage server.", e);
+        }
+    }
 }

@@ -48,12 +48,10 @@ public class VenueService {
     public Page<VenueIndexOverviewDto> filterVenues(String filter, int venueType, Pageable pageable) {
         Page<Venue> venues;
 
-        if (venueType == -1) {
+        if (venueType == -1)
             venues = venueRepository.filterVenues(filter, filter, pageable);
-        }
-        else {
+        else
             venues = venueRepository.filterVenuesWithType(filter, filter, VenueType.values()[venueType], pageable);
-        }
 
         return venues.map(venue -> VenueIndexOverviewDto.fromEntity(venue,
                 minIOService.getFileUrl(venue.getImageFilename()),
