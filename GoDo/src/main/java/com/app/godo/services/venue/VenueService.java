@@ -6,6 +6,7 @@ import com.app.godo.dtos.venue.CreateVenueRequestDto;
 import com.app.godo.dtos.venue.UpdateVenueDto;
 import com.app.godo.dtos.venue.VenueIndexOverviewDto;
 import com.app.godo.dtos.venue.VenueOverviewDto;
+import com.app.godo.enums.ReviewStatus;
 import com.app.godo.enums.VenueType;
 import com.app.godo.exceptions.general.ConflictException;
 import com.app.godo.exceptions.general.NotFoundException;
@@ -264,6 +265,7 @@ public class VenueService {
         return VenueIndexOverviewDto.fromEntity(venue, imagePath, pdfPath);
     }
 
+    @Transactional
     public UpdateVenueDto updateVenue(long venueId, UpdateVenueDto updateVenueDto) {
         Venue venue = venueRepository.findVenueById(venueId)
                 .orElseThrow(() -> new NotFoundException("The venue you were looking for can't be found"));
@@ -275,9 +277,12 @@ public class VenueService {
 
         venueRepository.save(venue);
 
+        syncVenueToElasticsearch(venue.getId());
+
         return UpdateVenueDto.fromEntity(venue);
     }
 
+    @Transactional
     public void deleteVenue(long venueId) {
         Venue venue = venueRepository.findVenueById(venueId)
                 .orElseThrow(() -> new NotFoundException("The venue you were looking for can't be found"));
@@ -288,6 +293,9 @@ public class VenueService {
         }
 
         venueRepository.delete(venue);
+        venueElasticsearchRepository.deleteById(venue.getId());
+        minIOService.deleteFile(venue.getPdfFilename());
+        minIOService.deleteFile(venue.getImageFilename());
     }
 
     public CreateVenueRequestDto convertToCreateVenueRequest(String venueJson) {
@@ -321,8 +329,8 @@ public class VenueService {
             pdfText = existingDoc.getPdfDescription();
         }
 
-        java.util.List<Review> validReviews = venue.getReviews().stream()
-                .filter(review -> review.getRating() != null)
+        List<Review> validReviews = venue.getReviews().stream()
+                .filter(review -> review.getStatus() == ReviewStatus.ACTIVE && review.getRating() != null)
                 .toList();
 
         int reviewCount = validReviews.size();
@@ -347,15 +355,28 @@ public class VenueService {
                 .filter(val -> val > 0)
                 .average().orElse(0.0);
 
+        double totalSum = validReviews.stream()
+                .mapToDouble(r -> r.getRating().getPerformance()
+                        + r.getRating().getAmbient()
+                        + r.getRating().getVenue()
+                        + r.getRating().getOverallImpression())
+                .sum();
+
+        double calculatedAverageRating = reviewCount > 0 ? totalSum / (4.0 * reviewCount) : 0.0;
+
+        venue.setAverageRating(calculatedAverageRating);
+        venueRepository.save(venue);
+
         VenueDocument updatedDoc = VenueDocument.builder()
                 .id(venue.getId())
                 .name(venue.getName())
                 .description(venue.getDescription())
                 .address(venue.getAddress())
                 .type(venue.getType().name())
-                .pdfDescription(pdfText)
-                .reviewCount(venue.getReviews().size())
-                .averageRating(venue.getAverageRating())
+                .imageFilename(existingDoc.getImageFilename())
+                .pdfFilename(existingDoc.getPdfFilename())
+                .reviewCount(reviewCount)
+                .averageRating(calculatedAverageRating)
                 .ratingPerformance(avgPerformance)
                 .ratingAmbient(avgAmbient)
                 .ratingVenue(avgVenueRating)

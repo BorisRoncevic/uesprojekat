@@ -14,6 +14,7 @@ import com.app.godo.repositories.review.ReviewRepository;
 import com.app.godo.repositories.user.UserRepository;
 import com.app.godo.repositories.venue.ManagesRepository;
 import com.app.godo.repositories.venue.VenueRepository;
+import com.app.godo.services.venue.VenueService;
 import com.app.godo.utils.Utils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class ReviewService {
     private final VenueRepository venueRepository;
     private final EventRepository eventRepository;
     private final ManagesRepository managesRepository;
+    private final VenueService venueService;
 
     private final Utils utils;
 
@@ -145,6 +147,7 @@ public class ReviewService {
 
         logger.info("review has been created with the Id: {}", newReview.getId());
 
+        venueService.syncVenueToElasticsearch(venue.getId());
     }
 
     public List<ReviewOverviewDto> findReviewsByVenueId(long venueId) {
@@ -244,6 +247,8 @@ public class ReviewService {
         review.setStatus(ReviewStatus.HIDDEN);
         reviewRepository.save(review);
 
+        venueService.syncVenueToElasticsearch(review.getVenue().getId());
+
         logger.info("Manager '{}' successfully hid a review with the ID: {}", subject, reviewId);
     }
 
@@ -275,6 +280,8 @@ public class ReviewService {
 
         review.setStatus(ReviewStatus.DELETED);
         reviewRepository.save(review);
+
+        venueService.syncVenueToElasticsearch(review.getVenue().getId());
 
         logger.info("Manager '{}' successfully deleted a review with the ID: {}", subject, reviewId);
     }
