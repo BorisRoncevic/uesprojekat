@@ -8,5 +8,16 @@
     <div>
         <h4 [style.color]="venueTypeColor()">{{ venueType }}</h4>
     </div>
-    <button class="text-2xl w-full bg-primary border-none hover:bg-primary-200 border-round-lg" [routerLink]="['/venue', venue.id]"><i class="pi pi-info-circle"></i></button>
+    <div class="flex gap-2 mt-auto w-full">
+        <!-- View details button -->
+        <button class="text-2xl w-full bg-primary border-none hover:bg-primary-200 border-round-lg p-2" [routerLink]="['/venue', venue.id]">
+            <i class="pi pi-info-circle"></i>
+        </button>
+
+        @if (venue.pdfPath) {
+            <button class="text-2xl w-full bg-red-500 hover:bg-red-600 text-white border-none border-round-lg p-2" (click)="downloadPdf()">
+                <i class="pi pi-file-pdf"></i>
+            </button>
+        }
+    </div>
 </div>

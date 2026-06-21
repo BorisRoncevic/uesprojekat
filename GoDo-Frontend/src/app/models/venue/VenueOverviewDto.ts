@@ -6,4 +6,5 @@ export interface VenueOverviewDto {
     averageRating: number,
     type: string,
     imagePath: string
+    pdfPath: string
 }

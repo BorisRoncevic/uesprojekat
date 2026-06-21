@@ -57,4 +57,20 @@ export class VenueCardComponent implements OnInit {
         return '#E0E0E0';
     }
   }
+
+  public downloadPdf(): void {
+    if (this.venue?.pdfPath) {
+      const link = document.createElement('a');
+      link.href = this.venue.pdfPath;
+      
+      // Extract file name from path or default to a generic name
+      const fileName = this.venue.pdfPath.split('/').pop() || `${this.venue.name}-info.pdf`;
+      link.download = fileName;
+      
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }
 }
