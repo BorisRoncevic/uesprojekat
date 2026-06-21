@@ -8,6 +8,9 @@
     <div>
         <h4 [style.color]="venueTypeColor()">{{ venueType }}</h4>
     </div>
+    <div>
+        <p>{{ venue.description }}</p>
+    </div>
     <div class="flex gap-2 mt-auto w-full">
         <!-- View details button -->
         <button class="text-2xl w-full bg-primary border-none hover:bg-primary-200 border-round-lg p-2" [routerLink]="['/venue', venue.id]">
