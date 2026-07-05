@@ -25,6 +25,17 @@
           "lowercase"
         ]
       }
+    },
+    "normalizer": {
+      "serbian_latin_cyrillic_sort_normalizer": {
+        "type": "custom",
+        "char_filter": [
+          "serbian_cyrillic_to_latin_filter"
+        ],
+        "filter": [
+          "lowercase"
+        ]
+      }
     }
   }
 }

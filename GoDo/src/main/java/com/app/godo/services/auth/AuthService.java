@@ -4,18 +4,17 @@ import com.app.godo.dtos.accountRequest.AccountRequestDto;
 import com.app.godo.dtos.accountRequest.AccountRequestSuccessDto;
 import com.app.godo.dtos.auth.AuthenticationRequestDto;
 import com.app.godo.dtos.auth.AuthenticationResponseDto;
+import com.app.godo.enums.ProfileStatus;
+import com.app.godo.enums.RequestStatus;
 import com.app.godo.exceptions.general.NotFoundException;
-import com.app.godo.exceptions.general.UnauthorizedException;
 import com.app.godo.exceptions.refreshToken.ValidationException;
 import com.app.godo.exceptions.registration.RegistrationException;
-import com.app.godo.mappers.AccountRequestMapper;
 import com.app.godo.models.AccountRequest;
 import com.app.godo.models.RefreshToken;
 import com.app.godo.models.User;
 import com.app.godo.repositories.accountRequest.AccountRequestRepository;
 import com.app.godo.repositories.auth.RefreshTokenRepository;
 import com.app.godo.repositories.user.UserRepository;
-import com.app.godo.services.email.EmailService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
@@ -29,6 +28,8 @@ import org.springframework.beans.factory.annotation.Value;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -37,7 +38,6 @@ public class AuthService {
     private final AccountRequestRepository accountRequestRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final EmailService emailService;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final RefreshTokenRepository refreshTokenRepository;
@@ -50,7 +50,7 @@ public class AuthService {
 
     @Transactional
     public AccountRequestSuccessDto sendRegistrationRequest(AccountRequestDto accountRequestDto) {
-        logger.info("New registration request received for username: {} and email: {}",
+        logger.info("New registration received for username: {} and email: {}",
                 accountRequestDto.getUsername(), accountRequestDto.getEmail());
 
         User userWithSameEmail = userRepository.findByEmail(accountRequestDto.getEmail());
@@ -70,18 +70,37 @@ public class AuthService {
 
         logger.debug("Username and email are unique for {}. Proceeding with password hashing.", accountRequestDto.getUsername());
         String hashed = passwordEncoder.encode(accountRequestDto.getPassword());
-        accountRequestDto.setPassword(hashed);
+        LocalDateTime submittedAt = LocalDateTime.now();
 
-        AccountRequest registrationRequest = AccountRequestMapper.toAccountRequest(accountRequestDto);
+        User newUser = User.builder()
+                .username(accountRequestDto.getUsername())
+                .password(hashed)
+                .email(accountRequestDto.getEmail())
+                .profileStatus(ProfileStatus.PENDING)
+                .memberSince(LocalDate.from(submittedAt))
+                .build();
+
+        userRepository.save(newUser);
+
+        AccountRequest registrationRequest = AccountRequest.builder()
+                .username(accountRequestDto.getUsername())
+                .password(hashed)
+                .email(accountRequestDto.getEmail())
+                .status(RequestStatus.ACCEPTED)
+                .submittedAt(submittedAt)
+                .build();
 
         accountRequestRepository.save(registrationRequest);
 
-        logger.info("Successfully saved registration request for username: {} with ID: {}",
-                registrationRequest.getUsername(), registrationRequest.getId());
-        emailService.sendRegistrationRequestSuccessEmail(registrationRequest.getUsername(), registrationRequest.getEmail());
+        logger.info("Successfully registered username: {} with user ID: {}",
+                newUser.getUsername(), newUser.getId());
 
-        logger.info("Registration request process completed successfully for username: {}", registrationRequest.getUsername());
-        return AccountRequestMapper.toAccountRequestSuccessDto(registrationRequest);
+        return AccountRequestSuccessDto.builder()
+                .username(newUser.getUsername())
+                .email(newUser.getEmail())
+                .submittedAt(submittedAt)
+                .status(RequestStatus.ACCEPTED)
+                .build();
     }
 
 

@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment.development';
 import { AddVenueRequest } from '../../models/venue/AddVenueRequest';
@@ -25,17 +25,26 @@ export class VenueService {
     filterVenueDto: FilterVenueDto,
     pageNumber: number
   ): Observable<any> {
-    let venueTypeParam = null;
+    let params = new HttpParams()
+      .set('page', pageNumber.toString())
+      .set('size', '8')
+      .set('sort', `name,${filterVenueDto.sortDirection ?? 'asc'}`);
 
+    Object.entries(filterVenueDto).forEach(([key, value]) => {
+      if (value !== null && value !== undefined && value !== '') {
+        params = params.set(key, String(value));
+      }
+    });
 
-    let queryParameters =
-      '?filter=' +
-      filterVenueDto.filter +
-      '&page=' +
-      pageNumber.toString() +
-      '&size=8';
-    
-    return this.http.get(environment.apiUrl + '/venue' + queryParameters);
+    return this.http.get(environment.apiUrl + '/venue', { params });
+  }
+
+  public findMoreLikeThis(venueId: number, pageNumber: number): Observable<any> {
+    const params = new HttpParams()
+      .set('page', pageNumber.toString())
+      .set('size', '8');
+
+    return this.http.get(`${environment.apiUrl}/venue/${venueId}/more-like-this`, { params });
   }
 
   public findVenueById(venueId: string) : Observable<any> {

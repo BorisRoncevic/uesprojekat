@@ -14,7 +14,7 @@ export class AuthInterceptorService implements HttpInterceptor {
 
     intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
         // Skip authentication for auth endpoints
-        if (req.url.startsWith(environment.apiUrl + "/auth/")) {
+        if (req.url.startsWith(environment.apiUrl + "/auth/") || this.isPublicGetRequest(req)) {
             return next.handle(req);
         }
         
@@ -32,10 +32,27 @@ export class AuthInterceptorService implements HttpInterceptor {
         );
     }
 
+    private isPublicGetRequest(req: HttpRequest<any>): boolean {
+        if (req.method !== 'GET') {
+            return false;
+        }
+
+        const urlWithoutQuery = req.url.split('?')[0];
+        return [
+            `${environment.apiUrl}/event`,
+            `${environment.apiUrl}/event/today`,
+            `${environment.apiUrl}/venue/top`,
+        ].includes(urlWithoutQuery);
+    }
+
     private addTokenToRequest(req: HttpRequest<any>, token: string | null): HttpRequest<any> {
+        if (!token) {
+            return req;
+        }
+
         return req.clone({
             setHeaders: {
-                Authorization: `Bearer ${token || ''}`,
+                Authorization: `Bearer ${token}`,
             }
         });
     }

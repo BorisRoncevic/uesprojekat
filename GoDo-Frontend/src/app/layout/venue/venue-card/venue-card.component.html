@@ -11,6 +11,19 @@
     <div>
         <p>{{ venue.description }}</p>
     </div>
+    <div class="text-sm line-height-3 mb-3">
+        <div>Reviews: {{ venue.reviewCount ?? 0 }}</div>
+        <div>Average: {{ formatRating(venue.averageRating) }}</div>
+        @if (venue.ratingPerformance != null || venue.ratingAmbient != null || venue.ratingVenue != null || venue.ratingOverallImpression != null) {
+            <div>
+                Performance {{ formatRating(venue.ratingPerformance) }} | Sound {{ formatRating(venue.ratingAmbient) }} |
+                Space {{ formatRating(venue.ratingVenue) }} · Overall {{ formatRating(venue.ratingOverallImpression) }}
+            </div>
+        }
+    </div>
+    @if (venue.highlight) {
+        <div class="highlight-snippet text-sm line-height-3" [innerHTML]="venue.highlight"></div>
+    }
     <div class="flex gap-2 mt-auto w-full">
         <!-- View details button -->
         <button class="text-2xl w-full bg-primary border-none hover:bg-primary-200 border-round-lg p-2" [routerLink]="['/venue', venue.id]">

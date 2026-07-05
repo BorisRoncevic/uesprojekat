@@ -18,6 +18,12 @@ import { ReviewPageComponent } from './layout/review/review-page/review-page.com
 
 export const routes: Routes = [
     {
+        title: "Home",
+        path: '',
+        component: DashboardComponent,
+        pathMatch: 'full',
+    },
+    {
         title: "Dashboard",
         path: 'dashboard',
         component: DashboardComponent,

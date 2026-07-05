@@ -6,14 +6,14 @@ WORKDIR /app
 # copy dependencies and install them to cache layers, by doing this we make sure that dependencies don't get installed
 # every time a line of css/html/ts has been changed and only if the dependencies change which makes the container start up
 # much faster
-COPY package*.json .
-RUN npm install
+COPY package*.json ./
+RUN npm ci
 
 # copy the source code
 COPY . .
 
 # builds the angular application (the html page, script bundles and stylesheets)
-RUN npm run build --configuration=development
+RUN npm run build -- --configuration=development
 
 # Stage 2: Serve with Nginx
 FROM nginx:alpine

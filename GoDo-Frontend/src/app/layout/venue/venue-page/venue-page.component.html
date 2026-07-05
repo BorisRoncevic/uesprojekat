@@ -225,6 +225,21 @@
       >
     </div>
   </form>
+
+  <section class="w-full mt-7" *ngIf="similarVenues.length > 0">
+    <div class="flex justify-content-center align-items-center flex-column">
+      <span class="text-4xl font-light">Similar venues</span>
+      <div
+        class="border-top-1 border-white-alpha-50 border-2 w-full my-2"
+      ></div>
+    </div>
+
+    <div class="grid w-full mt-3">
+      <div *ngFor="let similarVenue of similarVenues" class="md:col-3 p-2 col-12">
+        <app-venue-card [venue]="similarVenue"></app-venue-card>
+      </div>
+    </div>
+  </section>
 </div>
 
 <!-- Delete dialog -->

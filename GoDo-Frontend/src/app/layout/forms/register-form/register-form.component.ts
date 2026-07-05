@@ -76,12 +76,12 @@ export class RegisterFormComponent {
           this.messageService.add({
             severity: 'success',
             summary: 'Successful registration',
-            detail: 'You have registered succesfully! Check your email!',
+            detail: 'You have registered successfully. You can log in now.',
           });
 
           this.registerForm.reset();
           this.loading = false;
-          this.onRegisterSuccess();
+          this.onSignInClick();
         },
         error: (error) => {
           this.messageService.add({

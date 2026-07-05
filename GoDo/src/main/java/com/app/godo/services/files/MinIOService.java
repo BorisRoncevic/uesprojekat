@@ -63,16 +63,21 @@ public class MinIOService {
     }
 
     public String uploadFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("A non-empty file must be provided for upload.");
+        }
+
         try {
             String originalFilename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "file";
             String uniqueFilename = UUID.randomUUID() + "_" + originalFilename.replaceAll("\\s+", "_");
+            String contentType = file.getContentType() != null ? file.getContentType() : "application/octet-stream";
 
             try (InputStream inputStream = file.getInputStream()) {
                 minioClient.putObject(PutObjectArgs.builder()
                         .bucket(bucketName)
                         .object(uniqueFilename)
                         .stream(inputStream, file.getSize(), -1)
-                        .contentType(file.getContentType())
+                        .contentType(contentType)
                         .build());
             }
 

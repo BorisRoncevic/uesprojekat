@@ -6,6 +6,7 @@ WORKDIR /app
 
 # copy necessary source code and pom.xml
 COPY pom.xml .
+RUN mvn -B dependency:go-offline
 COPY src ./src
 
 # clean and build the project into a jar file inside of the target directory

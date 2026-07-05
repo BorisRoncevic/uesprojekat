@@ -32,15 +32,15 @@
             <AppenderRef ref="FileAppender"/>
         </Logger>
 
+        <Logger name="org.hibernate" level="warn" additivity="false">
+            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="FileAppender"/>
+        </Logger>
+
         <Root level="info">
             <AppenderRef ref="ConsoleAppender"/>
             <AppenderRef ref="FileAppender"/>
         </Root>
     </Loggers>
-
-    <Logger name="org.hibernate" level="warn" additivity="false">
-        <AppenderRef ref="ConsoleAppender"/>
-        <AppenderRef ref="FileAppender"/>
-    </Logger>
 
 </Configuration>

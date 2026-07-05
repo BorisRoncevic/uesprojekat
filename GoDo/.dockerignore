@@ -1,0 +1,14 @@
+target
+logs
+uploads
+.git
+.gitignore
+.mvn
+mvnw
+mvnw.cmd
+.idea
+.vscode
+*.iml
+*.log
+.DS_Store
+Dockerfile

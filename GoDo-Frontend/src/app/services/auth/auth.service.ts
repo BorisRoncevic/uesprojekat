@@ -14,6 +14,28 @@ import { MyJwtPayload } from '../../models/auth/jwt/myJwtPayload';
 export class AuthService {
   constructor(private http: HttpClient) {}
 
+  private clearStoredTokens(): void {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+    }
+  }
+
+  private decodeAccessToken(): MyJwtPayload | null {
+    const token = this.getAccessToken();
+
+    if (token == null) {
+      return null;
+    }
+
+    try {
+      return jwtDecode<MyJwtPayload>(token);
+    } catch {
+      this.clearStoredTokens();
+      return null;
+    }
+  }
+
   public sendRegistrationRequest(
     request: AccountRegistrationRequest
   ): Observable<any> {
@@ -25,16 +47,7 @@ export class AuthService {
   }
 
   public getUserRole() {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      let token: string | null = this.getAccessToken();
-
-      if (token == null) return false;
-
-      let decodedToken = jwtDecode<MyJwtPayload>(token);
-      return decodedToken.role;
-    }
-
-    return null;
+    return this.decodeAccessToken()?.role ?? null;
   }
 
   setAccessToken(token: string) {
@@ -87,22 +100,11 @@ export class AuthService {
   }
 
   getUsername() {
-    let token: string | null = this.getAccessToken();
-
-    if (token == null) return '??????';
-
-    let decodedToken = jwtDecode(token);
-
-    return decodedToken.sub;
+    return this.decodeAccessToken()?.sub ?? '??????';
   }
 
   isAdmin(): boolean {
-    let token: string | null = this.getAccessToken();
-
-    if (token == null) return false;
-
-    let decodedToken = jwtDecode<MyJwtPayload>(token);
-    return decodedToken.role == 'ADMIN';
+    return this.decodeAccessToken()?.role == 'ADMIN';
   }
 
   refreshToken(): Observable<any> {
@@ -123,11 +125,6 @@ export class AuthService {
   }
 
   isProfilePending(): boolean {
-    let token: string | null = this.getAccessToken();
-
-    if (token == null) return false;
-
-    let decodedToken = jwtDecode<MyJwtPayload>(token);
-    return decodedToken.status == 'PENDING';
+    return this.decodeAccessToken()?.status == 'PENDING';
   }
 }

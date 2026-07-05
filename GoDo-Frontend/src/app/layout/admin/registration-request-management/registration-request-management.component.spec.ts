@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { testProviders } from '@testing/test-providers';
 
 import { RegistrationRequestManagementComponent } from './registration-request-management.component';
 
@@ -8,7 +9,8 @@ describe('RegistrationRequestManagementComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [RegistrationRequestManagementComponent]
+      imports: [RegistrationRequestManagementComponent],
+      providers: testProviders
     })
     .compileComponents();
 

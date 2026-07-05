@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { CreateReviewDto } from '../../models/review/CreateReviewDto';
 import { environment } from '../../../environments/environment.development';
@@ -22,8 +22,17 @@ export class ReviewService {
     return this.http.get(`${environment.apiUrl}/review/overview/${venueId}`);
   }
 
-  public getRatingPageByVenueId(venueId: string, page: number) : Observable<any> {
-    return this.http.get(`${environment.apiUrl}/review/venue/${venueId}?page=${page}`)
+  public getRatingPageByVenueId(
+    venueId: string,
+    page: number,
+    sortField: string = 'createdAt',
+    sortDirection: string = 'desc'
+  ) : Observable<any> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('sort', `${sortField},${sortDirection}`);
+
+    return this.http.get(`${environment.apiUrl}/review/venue/${venueId}`, { params })
   }
 
   public hideReview(reviewId: number): Observable<any> {

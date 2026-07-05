@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { testProviders } from '@testing/test-providers';
 
 import { AdminHubComponent } from './admin-hub.component';
 
@@ -8,7 +9,8 @@ describe('AdminHubComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AdminHubComponent]
+      imports: [AdminHubComponent],
+      providers: testProviders
     })
     .compileComponents();
 

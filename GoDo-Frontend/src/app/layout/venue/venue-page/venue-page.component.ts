@@ -31,6 +31,7 @@ import { MessageModule } from 'primeng/message';
 import { ReviewService } from '../../../services/review/review.service';
 import { ReviewCardComponent } from '../../review/review-card/review-card.component';
 import { RatingOverviewDto } from '../../../models/review/RatingOverviewDto';
+import { VenueCardComponent } from '../venue-card/venue-card.component';
 
 @Component({
   selector: 'app-venue-page',
@@ -52,6 +53,7 @@ import { RatingOverviewDto } from '../../../models/review/RatingOverviewDto';
     RatingModule,
     MessageModule,
     ReviewCardComponent,
+    VenueCardComponent,
   ],
   templateUrl: './venue-page.component.html',
   styleUrl: './venue-page.component.css',
@@ -74,6 +76,7 @@ export class VenuePageComponent implements OnInit {
   reviewEventOptions: any[] = [{ id: -1, name: 'Select event' }];
 
   reviewList: any[] = [];
+  similarVenues: VenueOverviewDto[] = [];
   ratingOverview: RatingOverviewDto = {averageRating: 0, reviewCount: 0}
 
   VenueTypeMap = new Map<string, string>([
@@ -198,6 +201,15 @@ export class VenuePageComponent implements OnInit {
         this.showError(
           'An error has occurred while fetching venue rating overview!'
         );
+      },
+    });
+
+    this.venueService.findMoreLikeThis(Number(venueId), 0).subscribe({
+      next: (response) => {
+        this.similarVenues = response.content ?? [];
+      },
+      error: () => {
+        this.similarVenues = [];
       },
     });
   }

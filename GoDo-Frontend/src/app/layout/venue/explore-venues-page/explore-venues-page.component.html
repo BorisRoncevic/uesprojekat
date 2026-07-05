@@ -3,23 +3,96 @@
 >
   <h1 class="text-primary">Explore venues</h1>
   <form
-    class="flex flex-column justify-content-center align-items-center w-full"
+    class="flex flex-column justify-content-center align-items-center w-full px-3"
     [formGroup]="filterForm"
   >
-    <input
-      type="text"
-      pInputText
-      class="mx-2 w-full lg:w-5 my-2 border-round-top-xl"
-      id="input-filter"
-      placeholder="Explore venues"
-      formControlName="filter"
-    />
-    <button
-      class="mx-2 w-full lg:w-5 my-2 py-2 bg-primary border-none border-round-bottom-lg hover:bg-primary-200 font-bold"
-      (click)="filter()"
-    >
-      Search
-    </button>
+    <div class="grid w-full lg:w-10">
+      <div class="col-12 md:col-6 lg:col-3">
+        <input
+          type="text"
+          pInputText
+          class="w-full"
+          id="input-filter"
+          placeholder="Search all text"
+          formControlName="filter"
+        />
+      </div>
+      <div class="col-12 md:col-6 lg:col-3">
+        <input type="text" pInputText class="w-full" placeholder="Name" formControlName="name" />
+      </div>
+      <div class="col-12 md:col-6 lg:col-3">
+        <input type="text" pInputText class="w-full" placeholder="Description" formControlName="description" />
+      </div>
+      <div class="col-12 md:col-6 lg:col-3">
+        <input type="text" pInputText class="w-full" placeholder="PDF description" formControlName="pdfDescription" />
+      </div>
+
+      <div class="col-12 md:col-6 lg:col-3">
+        <p-select
+          class="w-full"
+          formControlName="operator"
+          [options]="operatorOptions"
+          optionLabel="label"
+          optionValue="value"
+        />
+      </div>
+      <div class="col-12 md:col-6 lg:col-3">
+        <p-select
+          class="w-full"
+          formControlName="sortDirection"
+          [options]="sortOptions"
+          optionLabel="label"
+          optionValue="value"
+        />
+      </div>
+      <div class="col-6 md:col-3 lg:col-2">
+        <input type="number" pInputText class="w-full" placeholder="Reviews from" formControlName="reviewCountFrom" />
+      </div>
+      <div class="col-6 md:col-3 lg:col-2">
+        <input type="number" pInputText class="w-full" placeholder="Reviews to" formControlName="reviewCountTo" />
+      </div>
+
+      <div class="col-6 md:col-3 lg:col-2">
+        <input type="number" pInputText class="w-full" min="0" max="5" step="0.1" placeholder="Performance from" formControlName="ratingPerformanceFrom" />
+      </div>
+      <div class="col-6 md:col-3 lg:col-2">
+        <input type="number" pInputText class="w-full" min="0" max="5" step="0.1" placeholder="Performance to" formControlName="ratingPerformanceTo" />
+      </div>
+      <div class="col-6 md:col-3 lg:col-2">
+        <input type="number" pInputText class="w-full" min="0" max="5" step="0.1" placeholder="Ambience from" formControlName="ratingAmbientFrom" />
+      </div>
+      <div class="col-6 md:col-3 lg:col-2">
+        <input type="number" pInputText class="w-full" min="0" max="5" step="0.1" placeholder="Ambience to" formControlName="ratingAmbientTo" />
+      </div>
+      <div class="col-6 md:col-3 lg:col-2">
+        <input type="number" pInputText class="w-full" min="0" max="5" step="0.1" placeholder="Venue from" formControlName="ratingVenueFrom" />
+      </div>
+      <div class="col-6 md:col-3 lg:col-2">
+        <input type="number" pInputText class="w-full" min="0" max="5" step="0.1" placeholder="Venue to" formControlName="ratingVenueTo" />
+      </div>
+      <div class="col-6 md:col-3 lg:col-2">
+        <input type="number" pInputText class="w-full" min="0" max="5" step="0.1" placeholder="Overall from" formControlName="ratingOverallImpressionFrom" />
+      </div>
+      <div class="col-6 md:col-3 lg:col-2">
+        <input type="number" pInputText class="w-full" min="0" max="5" step="0.1" placeholder="Overall to" formControlName="ratingOverallImpressionTo" />
+      </div>
+    </div>
+    <div class="flex gap-2 w-full lg:w-5">
+      <button
+        type="button"
+        class="w-full my-2 py-2 bg-primary border-none border-round-lg hover:bg-primary-200 font-bold"
+        (click)="filter()"
+      >
+        Search
+      </button>
+      <button
+        type="button"
+        class="w-full my-2 py-2 bg-black-alpha-50 border-1 border-gray-700 border-round-lg hover:bg-black-alpha-30 font-bold text-white"
+        (click)="resetFilters()"
+      >
+        Reset
+      </button>
+    </div>
   </form>
   <div class="grid w-full mt-5" *ngIf="this.venues.length > 0">
     <div *ngFor="let venue of venues" class="md:col-3 p-2 col-12">

@@ -1,10 +1,31 @@
 <div
   class="flex justify-content-center flex-column align-items-center mt-8 w-full"
 >
-<div class="w-full flex justify-content-left pl-8">
-  <p-button
-  [routerLink]="['/venue', venueId]">Back to venue page</p-button>
-</div>
+  <div class="w-full flex justify-content-left pl-8">
+    <p-button [routerLink]="['/venue', venueId]">Back to venue page</p-button>
+  </div>
+
+  <div class="flex flex-wrap justify-content-center gap-2 mt-4 px-4 w-full">
+    <select
+      class="p-2 border-round-md bg-black-alpha-50 text-white border-1 border-gray-700"
+      [value]="selectedSortField"
+      (change)="selectedSortField = $any($event.target).value; filter()"
+    >
+      <option *ngFor="let option of sortFieldOptions" [value]="option.value">
+        {{ option.label }}
+      </option>
+    </select>
+    <select
+      class="p-2 border-round-md bg-black-alpha-50 text-white border-1 border-gray-700"
+      [value]="selectedSortDirection"
+      (change)="selectedSortDirection = $any($event.target).value; filter()"
+    >
+      <option *ngFor="let option of sortDirectionOptions" [value]="option.value">
+        {{ option.label }}
+      </option>
+    </select>
+  </div>
+
   <div class="grid w-full mt-5 lg:px-5" *ngIf="this.reviews.length > 0">
     <div class="p-2 col-12 lg:px-5" *ngFor="let review of reviews">
       <app-review-card

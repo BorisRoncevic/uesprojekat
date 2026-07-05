@@ -48,6 +48,11 @@ services:
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
   
   backend:
     build: ./GoDo
@@ -71,6 +76,8 @@ services:
       db:
         condition: service_healthy
       elasticsearch:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     volumes:
       - uploads:/app/uploads

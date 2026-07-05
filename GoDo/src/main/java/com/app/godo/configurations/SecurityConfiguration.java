@@ -13,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
 import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.http.HttpMethod;
 
 @Configuration
 public class SecurityConfiguration {
@@ -22,6 +23,8 @@ public class SecurityConfiguration {
         return http.cors().and().csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/uploads/**")
+                        .permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/event", "/api/event/today", "/api/venue/top")
                         .permitAll()
                         .anyRequest()
                         .authenticated()

@@ -14,6 +14,8 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EventDetailsDto {
+    private static final String FALLBACK_IMAGE_URL = "https://picsum.photos/800/600";
+
     private long id;
     private String name;
     private String description;
@@ -34,7 +36,7 @@ public class EventDetailsDto {
                 event.getDate(),
                 event.getEventType(),
                 event.getPrice(),
-                event.getImage().getPath(),
+                event.getImage() != null ? event.getImage().getPath() : FALLBACK_IMAGE_URL,
                 event.isRecurrent(),
                 event.getAddress(),
                 event.getVenue().getId()

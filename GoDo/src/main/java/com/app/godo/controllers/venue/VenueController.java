@@ -5,7 +5,7 @@ import com.app.godo.dtos.venue.CreateVenueRequestDto;
 import com.app.godo.dtos.venue.UpdateVenueDto;
 import com.app.godo.dtos.venue.VenueIndexOverviewDto;
 import com.app.godo.dtos.venue.VenueOverviewDto;
-import com.app.godo.models.Venue;
+import com.app.godo.dtos.venue.VenueSearchCriteriaDto;
 import com.app.godo.services.venue.VenueService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -18,8 +18,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-import static org.springframework.http.ResponseEntity.noContent;
-
 @RestController
 @RequestMapping("/api/venue")
 @RequiredArgsConstructor
@@ -29,9 +27,41 @@ public class VenueController {
     @GetMapping
     public ResponseEntity<Page<VenueIndexOverviewDto>> filterVenues(
             @RequestParam(value = "filter", defaultValue = "") String filter,
+            @RequestParam(value = "name", required = false) String name,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam(value = "pdfDescription", required = false) String pdfDescription,
+            @RequestParam(value = "reviewCountFrom", required = false) Integer reviewCountFrom,
+            @RequestParam(value = "reviewCountTo", required = false) Integer reviewCountTo,
+            @RequestParam(value = "ratingPerformanceFrom", required = false) Double ratingPerformanceFrom,
+            @RequestParam(value = "ratingPerformanceTo", required = false) Double ratingPerformanceTo,
+            @RequestParam(value = "ratingAmbientFrom", required = false) Double ratingAmbientFrom,
+            @RequestParam(value = "ratingAmbientTo", required = false) Double ratingAmbientTo,
+            @RequestParam(value = "ratingVenueFrom", required = false) Double ratingVenueFrom,
+            @RequestParam(value = "ratingVenueTo", required = false) Double ratingVenueTo,
+            @RequestParam(value = "ratingOverallImpressionFrom", required = false) Double ratingOverallImpressionFrom,
+            @RequestParam(value = "ratingOverallImpressionTo", required = false) Double ratingOverallImpressionTo,
+            @RequestParam(value = "operator", defaultValue = "AND") String operator,
             @PageableDefault(size = 8, sort = "name", direction = Sort.Direction.ASC) Pageable venuePage
     ){
-        return ResponseEntity.ok(venueService.filterVenues(filter, venuePage));
+        VenueSearchCriteriaDto criteria = VenueSearchCriteriaDto.builder()
+                .filter(filter)
+                .name(name)
+                .description(description)
+                .pdfDescription(pdfDescription)
+                .reviewCountFrom(reviewCountFrom)
+                .reviewCountTo(reviewCountTo)
+                .ratingPerformanceFrom(ratingPerformanceFrom)
+                .ratingPerformanceTo(ratingPerformanceTo)
+                .ratingAmbientFrom(ratingAmbientFrom)
+                .ratingAmbientTo(ratingAmbientTo)
+                .ratingVenueFrom(ratingVenueFrom)
+                .ratingVenueTo(ratingVenueTo)
+                .ratingOverallImpressionFrom(ratingOverallImpressionFrom)
+                .ratingOverallImpressionTo(ratingOverallImpressionTo)
+                .operator(operator)
+                .build();
+
+        return ResponseEntity.ok(venueService.filterVenues(criteria, venuePage));
     }
 
     @PostMapping(consumes = { "multipart/form-data" })
@@ -47,6 +77,14 @@ public class VenueController {
     @GetMapping("/{id}")
     public ResponseEntity<VenueIndexOverviewDto> getVenueById(@PathVariable long id) {
           return ResponseEntity.ok(venueService.findVenueById(id));
+    }
+
+    @GetMapping("/{id}/more-like-this")
+    public ResponseEntity<Page<VenueIndexOverviewDto>> findMoreLikeThis(
+            @PathVariable long id,
+            @PageableDefault(size = 8) Pageable venuePage
+    ) {
+        return ResponseEntity.ok(venueService.findMoreLikeThis(id, venuePage));
     }
 
     @PutMapping("/{id}")

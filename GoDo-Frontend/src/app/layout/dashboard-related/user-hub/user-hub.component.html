@@ -4,14 +4,14 @@
         <p>{{ overview.manager }}</p>
         <p>{{ overview.venue.name }}</p>
     </div> -->
-  <h1 class="text-center text-primary">Happening today</h1>
+  <h1 class="text-center text-primary">Events</h1>
   <div class="grid w-full mt-5" *ngIf="this.events.length > 0">
     <div class="md:col-3 p-2 col-12" *ngFor="let event of events">
       <app-event-card [event]="event"></app-event-card>
     </div>
   </div>
   <h3 class="text-center mt-5" *ngIf="this.events.length == 0">
-    Looks like it's a "stay home in your pajamas" type of night...
+    No events have been found...
   </h3>
 
   <h1 class="text-center text-primary">Top venues</h1>

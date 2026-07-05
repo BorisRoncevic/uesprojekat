@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { testProviders } from '@testing/test-providers';
 
 import { EventPageComponent } from './event-page.component';
 
@@ -8,7 +9,8 @@ describe('EventPageComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EventPageComponent]
+      imports: [EventPageComponent],
+      providers: testProviders
     })
     .compileComponents();
 

@@ -1,0 +1,11 @@
+node_modules
+.angular
+dist
+coverage
+.git
+.gitignore
+.vscode
+npm-debug.log
+yarn-error.log
+.DS_Store
+Dockerfile

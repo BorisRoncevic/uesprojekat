@@ -21,7 +21,7 @@ public class VenueDocument {
     @MultiField(
          mainField = @Field(type = FieldType.Text, analyzer = "serbian_latin_cyrillic_analyzer", searchAnalyzer = "serbian_latin_cyrillic_analyzer"),
          otherFields = {
-                 @InnerField(suffix = "keyword", type = FieldType.Keyword)
+                 @InnerField(suffix = "keyword", type = FieldType.Keyword, normalizer = "serbian_latin_cyrillic_sort_normalizer")
          }
     )
     private String name;

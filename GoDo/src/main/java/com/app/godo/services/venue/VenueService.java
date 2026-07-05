@@ -1,11 +1,13 @@
 package com.app.godo.services.venue;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import com.app.godo.dtos.venue.CreateVenueRequestDto;
 import com.app.godo.dtos.venue.UpdateVenueDto;
 import com.app.godo.dtos.venue.VenueIndexOverviewDto;
 import com.app.godo.dtos.venue.VenueOverviewDto;
+import com.app.godo.dtos.venue.VenueSearchCriteriaDto;
 import com.app.godo.enums.ReviewStatus;
 import com.app.godo.enums.VenueType;
 import com.app.godo.exceptions.general.ConflictException;
@@ -34,14 +36,19 @@ import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.data.elasticsearch.core.query.HighlightQuery;
+import org.springframework.data.elasticsearch.core.query.highlight.Highlight;
+import org.springframework.data.elasticsearch.core.query.highlight.HighlightField;
+import org.springframework.data.elasticsearch.core.query.highlight.HighlightParameters;
 import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -96,51 +103,12 @@ public class VenueService {
 
     private static final Logger logger = LogManager.getLogger(VenueService.class);
 
-    public Page<VenueIndexOverviewDto> filterVenues(String filter, Pageable pageable) {
-        BoolQuery.Builder mainBoolQuery = new BoolQuery.Builder();
-        boolean hasCriteria = false;
-
-        if (filter != null && !filter.trim().isEmpty()) {
-            String trimmed = filter.trim();
-            BoolQuery.Builder textShouldQuery = new BoolQuery.Builder();
-
-            if (trimmed.startsWith("\"") && trimmed.endsWith("\"") && trimmed.length() > 1) {
-                String phrase = trimmed.substring(1, trimmed.length() - 1);
-                textShouldQuery.should(QueryBuilders.matchPhrase(m -> m.field("name").query(phrase)));
-                textShouldQuery.should(QueryBuilders.matchPhrase(m -> m.field("description").query(phrase)));
-                textShouldQuery.should(QueryBuilders.matchPhrase(m -> m.field("pdfDescription").query(phrase)));
-            } else if (trimmed.endsWith("*") && trimmed.length() > 1) {
-                String prefix = trimmed.substring(0, trimmed.length() - 1);
-                String normalizedPrefix = normalizeSerbian(prefix);
-                textShouldQuery.should(QueryBuilders.prefix(p -> p.field("name").value(normalizedPrefix)));
-                textShouldQuery.should(QueryBuilders.prefix(p -> p.field("description").value(normalizedPrefix)));
-                textShouldQuery.should(QueryBuilders.prefix(p -> p.field("pdfDescription").value(normalizedPrefix)));
-            } else if (trimmed.startsWith("~") && trimmed.length() > 1) {
-                String term = trimmed.substring(1);
-                String normalizedTerm = normalizeSerbian(term);
-                textShouldQuery.should(QueryBuilders.fuzzy(f -> f.field("name").value(normalizedTerm).fuzziness("AUTO")));
-                textShouldQuery.should(QueryBuilders.fuzzy(f -> f.field("description").value(normalizedTerm).fuzziness("AUTO")));
-                textShouldQuery.should(QueryBuilders.fuzzy(f -> f.field("pdfDescription").value(normalizedTerm).fuzziness("AUTO")));
-            } else {
-                textShouldQuery.should(QueryBuilders.match(m -> m.field("name").query(trimmed)));
-                textShouldQuery.should(QueryBuilders.match(m -> m.field("description").query(trimmed)));
-                textShouldQuery.should(QueryBuilders.match(m -> m.field("pdfDescription").query(trimmed)));
-            }
-
-            textShouldQuery.minimumShouldMatch("1");
-            mainBoolQuery.must(textShouldQuery.build()._toQuery());
-            hasCriteria = true;
-        }
-
-        co.elastic.clients.elasticsearch._types.query_dsl.Query finalQuery;
-        if (hasCriteria) {
-            finalQuery = mainBoolQuery.build()._toQuery();
-        } else {
-            finalQuery = QueryBuilders.matchAll(m -> m);
-        }
+    public Page<VenueIndexOverviewDto> filterVenues(VenueSearchCriteriaDto criteria, Pageable pageable) {
+        Query finalQuery = buildVenueSearchQuery(criteria);
 
         org.springframework.data.elasticsearch.client.elc.NativeQueryBuilder nativeQueryBuilder = NativeQuery.builder()
                 .withQuery(finalQuery)
+                .withHighlightQuery(buildHighlightQuery())
                 .withPageable(PageRequest.of(pageable.getPageNumber(), pageable.getPageSize()));
 
         if (pageable.getSort().isSorted()) {
@@ -182,11 +150,206 @@ public class VenueService {
         }
     }
 
+    public Page<VenueIndexOverviewDto> findMoreLikeThis(long venueId, Pageable pageable) {
+        VenueDocument venueDocument = venueElasticsearchRepository.findById(venueId)
+                .orElseThrow(() -> new NotFoundException("The venue you were looking for can't be found in the search index"));
+
+        Query moreLikeThisQuery = QueryBuilders.bool(b -> b
+                .must(QueryBuilders.moreLikeThis(mlt -> mlt
+                        .fields("name", "description", "pdfDescription")
+                        .like(l -> l.text(String.join(" ",
+                                safeText(venueDocument.getName()),
+                                safeText(venueDocument.getDescription()),
+                                safeText(venueDocument.getPdfDescription()))))
+                        .minTermFreq(1)
+                        .minDocFreq(1)
+                        .maxQueryTerms(25)
+                        .minimumShouldMatch("20%")
+                ))
+                .mustNot(QueryBuilders.term(t -> t.field("_id").value(String.valueOf(venueId))))
+        );
+
+        NativeQuery nativeQuery = NativeQuery.builder()
+                .withQuery(moreLikeThisQuery)
+                .withHighlightQuery(buildHighlightQuery())
+                .withPageable(PageRequest.of(pageable.getPageNumber(), pageable.getPageSize()))
+                .build();
+
+        SearchHits<VenueDocument> searchHits = elasticsearchOperations.search(nativeQuery, VenueDocument.class);
+        List<VenueIndexOverviewDto> mappedDtos = searchHits.getSearchHits().stream()
+                .map(this::mapToDto)
+                .toList();
+
+        return PageableExecutionUtils.getPage(mappedDtos, pageable, searchHits::getTotalHits);
+    }
+
     private String remapSortField(String field) {
         return switch (field) {
             case "name" -> "name.keyword";
             default -> field;
         };
+    }
+
+    private Query buildVenueSearchQuery(VenueSearchCriteriaDto criteria) {
+        if (criteria == null) {
+            return QueryBuilders.matchAll(m -> m);
+        }
+
+        boolean useOrOperator = "OR".equalsIgnoreCase(criteria.getOperator());
+        BoolQuery.Builder boolQuery = new BoolQuery.Builder();
+        int criteriaCount = 0;
+
+        if (addCriterion(boolQuery, buildSearchEverywhereQuery(criteria.getFilter()).orElse(null), useOrOperator)) {
+            criteriaCount++;
+        }
+        if (addCriterion(boolQuery, buildTextQuery("name", criteria.getName()).orElse(null), useOrOperator)) {
+            criteriaCount++;
+        }
+        if (addCriterion(boolQuery, buildTextQuery("description", criteria.getDescription()).orElse(null), useOrOperator)) {
+            criteriaCount++;
+        }
+        if (addCriterion(boolQuery, buildTextQuery("pdfDescription", criteria.getPdfDescription()).orElse(null), useOrOperator)) {
+            criteriaCount++;
+        }
+        if (addCriterion(boolQuery, buildRangeQuery("reviewCount", criteria.getReviewCountFrom(), criteria.getReviewCountTo()).orElse(null), useOrOperator)) {
+            criteriaCount++;
+        }
+        if (addCriterion(boolQuery, buildRangeQuery("ratingPerformance", criteria.getRatingPerformanceFrom(), criteria.getRatingPerformanceTo()).orElse(null), useOrOperator)) {
+            criteriaCount++;
+        }
+        if (addCriterion(boolQuery, buildRangeQuery("ratingAmbient", criteria.getRatingAmbientFrom(), criteria.getRatingAmbientTo()).orElse(null), useOrOperator)) {
+            criteriaCount++;
+        }
+        if (addCriterion(boolQuery, buildRangeQuery("ratingVenue", criteria.getRatingVenueFrom(), criteria.getRatingVenueTo()).orElse(null), useOrOperator)) {
+            criteriaCount++;
+        }
+        if (addCriterion(boolQuery, buildRangeQuery("ratingOverallImpression", criteria.getRatingOverallImpressionFrom(), criteria.getRatingOverallImpressionTo()).orElse(null), useOrOperator)) {
+            criteriaCount++;
+        }
+
+        if (criteriaCount == 0) {
+            return QueryBuilders.matchAll(m -> m);
+        }
+
+        if (useOrOperator) {
+            boolQuery.minimumShouldMatch("1");
+        }
+
+        return boolQuery.build()._toQuery();
+    }
+
+    private boolean addCriterion(BoolQuery.Builder boolQuery, Query query, boolean useOrOperator) {
+        if (query == null) {
+            return false;
+        }
+
+        if (useOrOperator) {
+            boolQuery.should(query);
+        } else {
+            boolQuery.must(query);
+        }
+
+        return true;
+    }
+
+    private Optional<Query> buildSearchEverywhereQuery(String rawValue) {
+        if (!hasText(rawValue)) {
+            return Optional.empty();
+        }
+
+        BoolQuery.Builder textFieldsQuery = new BoolQuery.Builder();
+        buildTextQuery("name", rawValue).ifPresent(textFieldsQuery::should);
+        buildTextQuery("description", rawValue).ifPresent(textFieldsQuery::should);
+        buildTextQuery("pdfDescription", rawValue).ifPresent(textFieldsQuery::should);
+        textFieldsQuery.minimumShouldMatch("1");
+
+        return Optional.of(textFieldsQuery.build()._toQuery());
+    }
+
+    private Optional<Query> buildTextQuery(String field, String rawValue) {
+        if (!hasText(rawValue)) {
+            return Optional.empty();
+        }
+
+        String trimmed = rawValue.trim();
+
+        if (trimmed.startsWith("\"") && trimmed.endsWith("\"") && trimmed.length() > 1) {
+            String phrase = trimmed.substring(1, trimmed.length() - 1).trim();
+            if (!hasText(phrase)) {
+                return Optional.empty();
+            }
+            return Optional.of(QueryBuilders.matchPhrase(m -> m.field(field).query(phrase)));
+        }
+
+        if (trimmed.endsWith("*") && trimmed.length() > 1) {
+            String prefix = trimmed.substring(0, trimmed.length() - 1).trim();
+            if (!hasText(prefix)) {
+                return Optional.empty();
+            }
+
+            if (prefix.contains(" ")) {
+                return Optional.of(QueryBuilders.matchPhrasePrefix(m -> m.field(field).query(prefix)));
+            }
+
+            return Optional.of(QueryBuilders.prefix(p -> p.field(field).value(normalizeSerbian(prefix))));
+        }
+
+        if (trimmed.startsWith("~") && trimmed.length() > 1) {
+            String fuzzyTerm = trimmed.substring(1).trim();
+            if (!hasText(fuzzyTerm)) {
+                return Optional.empty();
+            }
+            return Optional.of(QueryBuilders.fuzzy(f -> f.field(field).value(normalizeSerbian(fuzzyTerm)).fuzziness("AUTO")));
+        }
+
+        return Optional.of(QueryBuilders.match(m -> m.field(field).query(trimmed)));
+    }
+
+    private Optional<Query> buildRangeQuery(String field, Number from, Number to) {
+        if (from == null && to == null) {
+            return Optional.empty();
+        }
+
+        return Optional.of(QueryBuilders.range(r -> r.number(n -> {
+            n.field(field);
+            if (from != null) {
+                n.gte(from.doubleValue());
+            }
+            if (to != null) {
+                n.lte(to.doubleValue());
+            }
+            return n;
+        })));
+    }
+
+    private HighlightQuery buildHighlightQuery() {
+        HighlightParameters parameters = HighlightParameters.builder()
+                .withPreTags("<mark>")
+                .withPostTags("</mark>")
+                .withFragmentSize(160)
+                .withNumberOfFragments(2)
+                .withNoMatchSize(160)
+                .withRequireFieldMatch(false)
+                .build();
+
+        Highlight highlight = new Highlight(
+                parameters,
+                List.of(
+                        new HighlightField("name"),
+                        new HighlightField("description"),
+                        new HighlightField("pdfDescription")
+                )
+        );
+
+        return new HighlightQuery(highlight, VenueDocument.class);
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
+    }
+
+    private boolean hasFile(MultipartFile file) {
+        return file != null && !file.isEmpty();
     }
 
     @Transactional
@@ -198,8 +361,11 @@ public class VenueService {
         String imageName = minIOService.uploadFile(venueImage);
         logger.info("Venue image is saved as {}", imageName);
 
-        String pdfName = minIOService.uploadFile(venuePdf);
-        logger.info("Venue PDF is saved as {}", pdfName);
+        String pdfName = null;
+        if (hasFile(venuePdf)) {
+            pdfName = minIOService.uploadFile(venuePdf);
+            logger.info("Venue PDF is saved as {}", pdfName);
+        }
 
         Venue venue = Venue.builder()
                 .name(venueRequest.getName())
@@ -220,7 +386,7 @@ public class VenueService {
 
         var savedVenue = venueRepository.save(venue);
 
-        String extractedPdfText = PDFParserUtil.extractTextFromPDF(venuePdf);
+        String extractedPdfText = hasFile(venuePdf) ? PDFParserUtil.extractTextFromPDF(venuePdf) : "";
 
         VenueDocument doc = VenueDocument.builder()
                 .id(savedVenue.getId())
@@ -251,7 +417,7 @@ public class VenueService {
         String imagePath = minIOService.getFileUrl(imageName);
         String pdfPath = minIOService.getFileUrl(pdfName);
 
-        return VenueIndexOverviewDto.fromEntity(venue, imageName, pdfName);
+        return VenueIndexOverviewDto.fromEntity(venue, imagePath, pdfPath);
     }
 
     public VenueIndexOverviewDto findVenueById(long venueId) {
@@ -328,6 +494,12 @@ public class VenueService {
         if (existingDoc != null) {
             pdfText = existingDoc.getPdfDescription();
         }
+        String imageFilename = existingDoc != null && existingDoc.getImageFilename() != null
+                ? existingDoc.getImageFilename()
+                : venue.getImageFilename();
+        String pdfFilename = existingDoc != null && existingDoc.getPdfFilename() != null
+                ? existingDoc.getPdfFilename()
+                : venue.getPdfFilename();
 
         List<Review> validReviews = venue.getReviews().stream()
                 .filter(review -> review.getStatus() == ReviewStatus.ACTIVE && review.getRating() != null)
@@ -373,8 +545,9 @@ public class VenueService {
                 .description(venue.getDescription())
                 .address(venue.getAddress())
                 .type(venue.getType().name())
-                .imageFilename(existingDoc.getImageFilename())
-                .pdfFilename(existingDoc.getPdfFilename())
+                .imageFilename(imageFilename)
+                .pdfFilename(pdfFilename)
+                .pdfDescription(pdfText)
                 .reviewCount(reviewCount)
                 .averageRating(calculatedAverageRating)
                 .ratingPerformance(avgPerformance)
@@ -385,6 +558,17 @@ public class VenueService {
 
         venueElasticsearchRepository.save(updatedDoc);
         logger.info("Successfully recalculated and synced ES document properties for Venue: {}", venue.getName());
+    }
+
+    @Transactional
+    public void syncAllVenuesToElasticsearch() {
+        venueRepository.findAll().forEach(venue -> {
+            try {
+                syncVenueToElasticsearch(venue.getId());
+            } catch (Exception e) {
+                logger.error("Failed to sync venue '{}' [ID: {}] to Elasticsearch.", venue.getName(), venue.getId(), e);
+            }
+        });
     }
 
     private String normalizeSerbian(String input) {
@@ -413,10 +597,47 @@ public class VenueService {
                 .id(doc.getId())
                 .name(doc.getName())
                 .description(descriptionToDisplay)
+                .address(doc.getAddress())
                 .type(VenueType.valueOf(doc.getType()))
-                .imagePath(imageUrl)
+                .imagePath(imageUrl != null ? imageUrl : "https://picsum.photos/800/600")
                 .pdfPath(pdfUrl)
                 .averageRating(doc.getAverageRating())
+                .reviewCount(doc.getReviewCount())
+                .ratingPerformance(doc.getRatingPerformance())
+                .ratingAmbient(doc.getRatingAmbient())
+                .ratingVenue(doc.getRatingVenue())
+                .ratingOverallImpression(doc.getRatingOverallImpression())
+                .highlight(extractHighlight(hit))
                 .build();
+    }
+
+    private String extractHighlight(SearchHit<VenueDocument> hit) {
+        List<String> preferredFields = List.of("name", "description", "pdfDescription");
+
+        for (String field : preferredFields) {
+            List<String> snippets = hit.getHighlightField(field);
+            if (snippets != null) {
+                List<String> markedSnippets = snippets.stream()
+                        .filter(snippet -> snippet.contains("<mark>"))
+                        .toList();
+                if (!markedSnippets.isEmpty()) {
+                    return String.join(" ... ", markedSnippets);
+                }
+            }
+        }
+
+        for (String field : preferredFields) {
+            List<String> snippets = hit.getHighlightField(field);
+            if (snippets != null && !snippets.isEmpty()) {
+                return String.join(" ... ", snippets);
+            }
+        }
+
+        VenueDocument doc = hit.getContent();
+        return safeText(doc.getDescription());
+    }
+
+    private String safeText(String value) {
+        return value == null ? "" : value;
     }
 }

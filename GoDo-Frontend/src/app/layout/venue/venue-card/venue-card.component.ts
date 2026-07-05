@@ -73,4 +73,12 @@ export class VenueCardComponent implements OnInit {
       document.body.removeChild(link);
     }
   }
+
+  public formatRating(value: number | null | undefined): string {
+    if (value == null) {
+      return '-';
+    }
+
+    return value.toFixed(1);
+  }
 }

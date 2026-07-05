@@ -24,6 +24,21 @@ export class ReviewPageComponent {
   first: number = 0;
   venueId: string = '';
   isManager: boolean = false;
+  selectedSortField = 'createdAt';
+  selectedSortDirection = 'desc';
+
+  sortFieldOptions = [
+    { label: 'Date', value: 'createdAt' },
+    { label: 'Performance', value: 'rating.performance' },
+    { label: 'Sound and light', value: 'rating.ambient' },
+    { label: 'Venue', value: 'rating.venue' },
+    { label: 'Overall', value: 'rating.overallImpression' },
+  ];
+
+  sortDirectionOptions = [
+    { label: 'Descending', value: 'desc' },
+    { label: 'Ascending', value: 'asc' },
+  ];
 
   constructor(
     private reviewService: ReviewService,
@@ -55,11 +70,17 @@ export class ReviewPageComponent {
   }
 
   filter() {
+    this.first = 0;
     this.loadReviews(0);
   }
 
   loadReviews(page: number): void {
-    this.reviewService.getRatingPageByVenueId(this.venueId, page).subscribe({
+    this.reviewService.getRatingPageByVenueId(
+      this.venueId,
+      page,
+      this.selectedSortField,
+      this.selectedSortDirection
+    ).subscribe({
       next: (response) => {
         this.reviews = response.content;
         this.totalElements = response.totalElements;

@@ -60,14 +60,25 @@ export class UserHubComponent implements OnInit {
     //     this.managementOverviewList = managementOverviewList;
     //   });
 
-    this.eventService.getEventsHappeningToday()
-    .subscribe({
-      next: (response) => {
-        this.events = response;
-      }, error: (error) => {
-        
+    this.eventService
+      .filterEvents(
+        {
+          filter: '',
+          priceFrom: -1,
+          priceTo: -1,
+          eventType: -1,
+          date: '',
+        },
+        0
+      )
+      .subscribe({
+        next: (response) => {
+          this.events = response.content;
+        }, error: (error) => {
+
+        }
       }
-    })
+    )
 
     this.venueService.getTopVenues().subscribe({
       next: (response) => {
