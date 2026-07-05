@@ -41,21 +41,35 @@ export function getErrorMessage(error: unknown): string {
 __________________________
 //api
 
-catch (error) {
-    throw new Error(getErrorMessage(error));
+export async function loginUser(
+    data: LoginRequest
+  ): Promise<LoginResponse> {
+    try {
+      const response = await api.post<LoginResponse>("/auth/login", data);
+  
+      return response.data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
   }
-
 
 
 //comp
 
-catch (error) {
-  if (error instanceof Error) {
-    setError(error.message);
-  } else {
-    setError("Unexpected error.");
+try {
+    const result = await loginUser({
+      username: form.username,
+      password: form.password,
+    });
+  
+    console.log(result.token);
+  } catch (error) {
+    if (error instanceof Error) {
+      setError(error.message);
+    } else {
+      setError("Unexpected error.");
+    }
   }
-
 
 
 
