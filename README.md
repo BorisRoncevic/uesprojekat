@@ -1,18 +1,14 @@
 
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-
 import {
-  Alert,
   Box,
   Button,
   IconButton,
-  InputAdornment,
+  InputBase,
   Paper,
-  TextField,
   Typography,
 } from "@mui/material";
-
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 
@@ -41,7 +37,7 @@ export default function LoginPage() {
       await login(form);
       navigate("/", { replace: true });
     } catch {
-      setError("Neispravan email ili lozinka.");
+      setError("Neispravna lozinka ili email");
     } finally {
       setLoading(false);
     }
@@ -54,18 +50,19 @@ export default function LoginPage() {
         minHeight: "100vh",
         width: "100%",
         display: "flex",
-        alignItems: "center",
         justifyContent: "center",
-        px: 3,
-        py: 8,
+        alignItems: "center",
+        paddingTop: "64px",
+        paddingBottom: "64px",
         backgroundColor: "rgba(37, 37, 37, 0.3)",
         backdropFilter: "blur(8px)",
 
-        // Ako imaš sliku u public folderu:
+        // Ako imaš sliku u public folderu, odkomentariši:
         // backgroundImage:
         //   "linear-gradient(rgba(37,37,37,0.3), rgba(37,37,37,0.3)), url('/parking-bg.jpg')",
         // backgroundSize: "cover",
         // backgroundPosition: "center",
+        // backgroundRepeat: "no-repeat",
       }}
     >
       <Paper
@@ -75,17 +72,15 @@ export default function LoginPage() {
         sx={{
           width: "600px",
           height: "529px",
-          borderRadius: "16px",
-          border: "2px solid #ffffff",
-          backgroundColor: "rgba(37, 37, 37, 0.85)",
-          color: "#ffffff",
-          px: "32px",
-          pt: "16px",
-          pb: "32px",
           display: "flex",
           flexDirection: "column",
           gap: "80px",
+          padding: "16px 32px 32px 32px",
+          backgroundColor: "rgba(37, 37, 37, 0.85)",
+          border: "2px solid #ffffff",
+          borderRadius: "16px",
           boxShadow: "0 4px 4px rgba(0, 0, 0, 0.25)",
+          color: "#ffffff",
         }}
       >
         <Box
@@ -94,12 +89,14 @@ export default function LoginPage() {
             height: "40px",
             display: "flex",
             alignItems: "center",
+            justifyContent: "space-between",
           }}
         >
           <Typography
-            variant="h4"
             component="h1"
             sx={{
+              margin: 0,
+              fontSize: "32px",
               fontWeight: 700,
               color: "#ffffff",
             }}
@@ -117,47 +114,127 @@ export default function LoginPage() {
             gap: "16px",
           }}
         >
-          <TextField
-            label="E-mail *"
-            type="email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            fullWidth
-            variant="outlined"
-            InputLabelProps={{
-              shrink: true,
+          <Box
+            sx={{
+              width: "100%",
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
             }}
-            sx={textFieldSx}
-          />
+          >
+            <Typography
+              component="label"
+              htmlFor="email"
+              sx={{
+                fontSize: "16px",
+                fontWeight: 700,
+                color: "#ffffff",
+              }}
+            >
+              E-mail *
+            </Typography>
 
-          <TextField
-            label="Password *"
-            type={showPassword ? "text" : "password"}
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            fullWidth
-            variant="outlined"
-            InputLabelProps={{
-              shrink: true,
+            <InputBase
+              id="email"
+              type="email"
+              value={form.email}
+              onChange={(e) =>
+                setForm({ ...form, email: e.target.value })
+              }
+              sx={{
+                width: "100%",
+                height: "48px",
+                border: "2px solid #ffffff",
+                borderRadius: "8px",
+                backgroundColor: "transparent",
+                color: "#ffffff",
+                padding: "0 16px",
+                fontSize: "16px",
+
+                "&.Mui-focused": {
+                  borderColor: "#7EFFC6",
+                },
+
+                "& input": {
+                  padding: 0,
+                  color: "#ffffff",
+                },
+              }}
+            />
+          </Box>
+
+          <Box
+            sx={{
+              width: "100%",
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
             }}
-            sx={textFieldSx}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    edge="end"
-                    sx={{
-                      color: "#ffffff",
-                    }}
-                  >
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
+          >
+            <Typography
+              component="label"
+              htmlFor="password"
+              sx={{
+                fontSize: "16px",
+                fontWeight: 700,
+                color: "#ffffff",
+              }}
+            >
+              Password *
+            </Typography>
+
+            <Box
+              sx={{
+                position: "relative",
+                width: "100%",
+              }}
+            >
+              <InputBase
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={form.password}
+                onChange={(e) =>
+                  setForm({ ...form, password: e.target.value })
+                }
+                sx={{
+                  width: "100%",
+                  height: "48px",
+                  border: "2px solid #ffffff",
+                  borderRadius: "8px",
+                  backgroundColor: "transparent",
+                  color: "#ffffff",
+                  padding: "0 52px 0 16px",
+                  fontSize: "16px",
+
+                  "&.Mui-focused": {
+                    borderColor: "#7EFFC6",
+                  },
+
+                  "& input": {
+                    padding: 0,
+                    color: "#ffffff",
+                  },
+                }}
+              />
+
+              <IconButton
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                sx={{
+                  position: "absolute",
+                  top: "50%",
+                  right: "12px",
+                  transform: "translateY(-50%)",
+                  width: "32px",
+                  height: "32px",
+                  color: "#ffffff",
+                  padding: 0,
+                }}
+              >
+                {showPassword ? <VisibilityOff /> : <Visibility />}
+              </IconButton>
+            </Box>
+          </Box>
         </Box>
 
         <Box
@@ -171,41 +248,44 @@ export default function LoginPage() {
           }}
         >
           {error && (
-            <Alert
-              severity="error"
+            <Typography
               sx={{
-                mb: 1,
-                py: 0,
-                fontSize: "13px",
+                color: "#ff8a8a",
+                fontSize: "14px",
+                textAlign: "center",
+                marginTop: "-40px",
               }}
             >
               {error}
-            </Alert>
+            </Typography>
           )}
 
           <Button
             type="submit"
             disabled={loading}
-            variant="contained"
             disableElevation
             sx={{
               width: "288px",
               height: "35px",
+              maxWidth: "288px",
               borderRadius: "24px",
+              padding: "8px 64px",
               backgroundColor: "#7EFFC6",
               color: "#252525",
-              textTransform: "none",
               fontSize: "16px",
               fontWeight: 500,
+              textTransform: "none",
+              cursor: "pointer",
 
               "&:hover": {
-                backgroundColor: "#6be3b1",
+                backgroundColor: "#6eeab7",
               },
 
               "&:disabled": {
                 backgroundColor: "#7EFFC6",
-                opacity: 0.7,
                 color: "#252525",
+                opacity: 0.7,
+                cursor: "not-allowed",
               },
             }}
           >
@@ -216,38 +296,3 @@ export default function LoginPage() {
     </Box>
   );
 }
-
-const textFieldSx = {
-  "& .MuiInputLabel-root": {
-    color: "#ffffff",
-    fontWeight: 700,
-    fontSize: "16px",
-  },
-
-  "& .MuiInputLabel-root.Mui-focused": {
-    color: "#ffffff",
-  },
-
-  "& .MuiOutlinedInput-root": {
-    height: "48px",
-    color: "#ffffff",
-    borderRadius: "8px",
-
-    "& fieldset": {
-      borderColor: "#ffffff",
-      borderWidth: "2px",
-    },
-
-    "&:hover fieldset": {
-      borderColor: "#ffffff",
-    },
-
-    "&.Mui-focused fieldset": {
-      borderColor: "#7EFFC6",
-    },
-  },
-
-  "& input": {
-    color: "#ffffff",
-  },
-};
